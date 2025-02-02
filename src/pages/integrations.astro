@@ -1,0 +1,136 @@
+---
+import Layout from "../layouts/Layout.astro";
+
+interface Integration {
+  id: string;
+  name: string;
+  description: string;
+  status: "available" | "coming_soon";
+}
+
+const integrations: Integration[] = [
+  {
+    id: "google-calendar",
+    name: "Google Calendar",
+    description: "View and manage your upcoming events and schedule",
+    status: "available",
+  },
+  {
+    id: "gmail",
+    name: "Gmail",
+    description: "Stay on top of your email inbox",
+    status: "available",
+  },
+  {
+    id: "weather",
+    name: "Weather",
+    description: "Get real-time weather updates and forecasts",
+    status: "coming_soon",
+  },
+  {
+    id: "tasks",
+    name: "Tasks",
+    description: "Manage your todo list and tasks",
+    status: "coming_soon",
+  },
+];
+---
+
+<Layout>
+  <div class="container">
+    <h2 class="container-header">Integrations</h2>
+    <div class="integrations-list">
+      {
+        integrations.map((integration) => (
+          <div class="integration-item">
+            <div class="integration-content">
+              <div class="integration-header">
+                <h2>{integration.name}</h2>
+                {integration.status === "coming_soon" && (
+                  <span class="status">Coming soon</span>
+                )}
+              </div>
+              <p>{integration.description}</p>
+            </div>
+            {integration.status === "available" && (
+              <button class="connect-btn">Connect</button>
+            )}
+          </div>
+        ))
+      }
+    </div>
+  </div>
+</Layout>
+
+<style>
+  .container {
+    max-width: 800px;
+    margin: 2rem auto;
+    padding: 0 1rem;
+    font-family: monospace;
+  }
+
+  .container-header {
+    font-size: 1rem;
+    margin-bottom: 1.5rem;
+    font-weight: normal;
+
+    background: #eee;
+    padding: 1rem 1rem;
+    border-radius: 0.5rem;
+    width: 110%;
+  }
+
+  .integration-item {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    margin-bottom: 1.5rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px dotted #ccc;
+  }
+
+  .integration-header {
+    display: flex;
+    align-items: baseline;
+    gap: 1rem;
+  }
+
+  .integration-content {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  h2 {
+    font-size: 1rem;
+    font-weight: normal;
+    margin: 0;
+  }
+
+  p {
+    font-size: 0.9rem;
+    color: #666;
+    margin: 0.25rem 0;
+  }
+
+  .status {
+    font-size: 0.8rem;
+    color: #666;
+  }
+
+  .connect-btn {
+    font-family: monospace;
+    font-size: 0.9rem;
+    background: none;
+    border: none;
+    color: #3245ff;
+    padding: 0;
+    cursor: pointer;
+    text-decoration: underline;
+  }
+
+  .connect-btn:hover {
+    color: #bc52ee;
+  }
+</style>
