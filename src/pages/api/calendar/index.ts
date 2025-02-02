@@ -5,9 +5,12 @@ import * as dotenv from "dotenv";
 dotenv.config();
 
 // If modifying these scopes, delete token.json.
-const SCOPES = ["https://www.googleapis.com/auth/calendar.readonly"];
+const SCOPES = [
+  "https://www.googleapis.com/auth/calendar.readonly",
+  "https://www.googleapis.com/auth/calendar.events.readonly",
+];
 
-export const get: APIRoute = async ({ request }) => {
+export const GET: APIRoute = async ({ request }) => {
   try {
     const oauth2Client = new google.auth.OAuth2(
       process.env.GOOGLE_CLIENT_ID,
@@ -15,10 +18,13 @@ export const get: APIRoute = async ({ request }) => {
       "http://localhost:4321/api/calendar/callback"
     );
 
-    // Generate auth URL
+    // Generate auth URL with state parameter
+    const state = Math.random().toString(36).substring(7);
     const authUrl = oauth2Client.generateAuthUrl({
       access_type: "offline",
       scope: SCOPES,
+      state: state,
+      prompt: "consent",
     });
 
     return new Response(JSON.stringify({ authUrl }), {

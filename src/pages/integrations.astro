@@ -19,7 +19,7 @@ const integrations: Integration[] = [
     id: "gmail",
     name: "Gmail",
     description: "Stay on top of your email inbox",
-    status: "available",
+    status: "coming_soon",
   },
   {
     id: "weather",
@@ -34,6 +34,15 @@ const integrations: Integration[] = [
     status: "coming_soon",
   },
 ];
+
+// Check if calendar is connected
+const calendarToken = Astro.cookies.get("google_calendar_token");
+console.log("Calendar token:", calendarToken?.value);
+
+const isCalendarConnected = Boolean(calendarToken?.value);
+console.log("Is calendar connected:", isCalendarConnected);
+
+// Check client-side cookie as well
 ---
 
 <Layout>
@@ -49,11 +58,25 @@ const integrations: Integration[] = [
                 {integration.status === "coming_soon" && (
                   <span class="status">Coming soon</span>
                 )}
+                {integration.id === "google-calendar" &&
+                  isCalendarConnected && (
+                    <span class="status connected">Connected</span>
+                  )}
               </div>
               <p>{integration.description}</p>
             </div>
             {integration.status === "available" && (
-              <button class="connect-btn">Connect</button>
+              <button
+                class="connect-btn"
+                data-integration={integration.id}
+                data-connected={
+                  integration.id === "google-calendar" && isCalendarConnected
+                }
+              >
+                {integration.id === "google-calendar" && isCalendarConnected
+                  ? "Disconnect"
+                  : "Connect"}
+              </button>
             )}
           </div>
         ))
@@ -61,6 +84,87 @@ const integrations: Integration[] = [
     </div>
   </div>
 </Layout>
+
+<script>
+  // Check if we have a token in cookies
+  function checkCalendarConnection() {
+    const cookies = document.cookie.split(";");
+    const hasToken = cookies.some((cookie) =>
+      cookie.trim().startsWith("google_calendar_token=")
+    );
+
+    if (hasToken) {
+      document
+        .querySelectorAll('[data-integration="google-calendar"]')
+        .forEach((el) => {
+          el.setAttribute("data-connected", "true");
+          if (el.classList.contains("connect-btn")) {
+            el.textContent = "Disconnect";
+          }
+        });
+
+      const statusEl = document.createElement("span");
+      statusEl.className = "status connected";
+      statusEl.textContent = "Connected";
+
+      document
+        .querySelector('[data-integration="google-calendar"]')
+        ?.querySelector(".integration-header")
+        ?.appendChild(statusEl);
+    }
+  }
+
+  // Run check on page load
+  checkCalendarConnection();
+
+  // Handle connect/disconnect buttons
+  document.querySelectorAll(".connect-btn").forEach((button) => {
+    button.addEventListener("click", async () => {
+      const integration = button.getAttribute("data-integration");
+      const isConnected = button.getAttribute("data-connected") === "true";
+
+      if (integration === "google-calendar") {
+        if (!isConnected) {
+          try {
+            // Start auth flow
+            const response = await fetch("/api/calendar");
+            const { authUrl } = await response.json();
+            if (authUrl) {
+              // Store current page URL in localStorage for redirect after auth
+              localStorage.setItem("auth_redirect", window.location.href);
+              window.location.href = authUrl;
+            }
+          } catch (error) {
+            console.error("Error starting auth flow:", error);
+          }
+        } else {
+          // Handle disconnect
+          try {
+            await fetch("/api/calendar/disconnect", { method: "POST" });
+            window.location.reload();
+          } catch (error) {
+            console.error("Error disconnecting:", error);
+          }
+        }
+      }
+    });
+  });
+
+  // Check for auth callback
+  const urlParams = new URLSearchParams(window.location.search);
+  const code = urlParams.get("code");
+  if (code) {
+    // Exchange code for token
+    fetch("/api/calendar/callback?code=" + code)
+      .then((response) => response.json())
+      .then((data) => {
+        if (data.success) {
+          window.location.href = "/integrations";
+        }
+      })
+      .catch((error) => console.error("Error exchanging code:", error));
+  }
+</script>
 
 <style>
   .container {
@@ -74,11 +178,9 @@ const integrations: Integration[] = [
     font-size: 1rem;
     margin-bottom: 1.5rem;
     font-weight: normal;
-
     background: #eee;
     padding: 1rem 1rem;
     border-radius: 0.5rem;
-    width: 110%;
   }
 
   .integration-item {
@@ -117,6 +219,10 @@ const integrations: Integration[] = [
   .status {
     font-size: 0.8rem;
     color: #666;
+  }
+
+  .status.connected {
+    color: #4caf50;
   }
 
   .connect-btn {
